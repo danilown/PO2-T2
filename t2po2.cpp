@@ -26,6 +26,7 @@ GtkWidget *campoFuncao;
 GtkWidget *spinnerDim;
 GtkWidget *spinnerErro;
 GtkWidget *botaoOk;
+std::string funcao;
 /*Variáveis de Acesso aos Elementos de Chute*/
 GtkWidget *layoutChuteGeral;
 GtkWidget *layoutChutes;
@@ -47,15 +48,23 @@ GtkWidget *resultado[MAIOR_DIMENSAO];
 /*Variáveis de Configuração de Spinners*/
 GtkAdjustment *adjustment;
 
+/*Variáveis das Janelas de Aviso*/
+GtkWidget *funcaoNaoPreenchida;
+GtkWidget *funcaoInvalida;
+GtkWidget *CampoNaoPreenchido;
+
 static void entradaPronta (GtkWidget* widget, gpointer data) {
 
+	/*Variáveis de Suporte ás Operações Realizadas Abaixo*/
 	int index = 0;
 
 	dimensao = gtk_spin_button_get_value(GTK_SPIN_BUTTON(spinnerDim));
 
 	int precisao = gtk_spin_button_get_value(GTK_SPIN_BUTTON(spinnerErro));
 	double erro = pow(10,-precisao);
+	/*************************************************************************/
 
+	/*Limpa o Painel Com os Campos para que Eles Não se Acumulem*/
 	GList *children, *iter;
 
 	children = gtk_container_get_children(GTK_CONTAINER(layoutChutes));
@@ -64,13 +73,29 @@ static void entradaPronta (GtkWidget* widget, gpointer data) {
   		gtk_widget_destroy(GTK_WIDGET(iter->data));
 
 	g_list_free(children);
+	/*************************************************************************/
 
+	/*Inicia os Layouts que Conterão os Campos, e os Inclui no Layout Principal*/	
 	for (int i=0;i<MAIOR_DIMENSAO/2;i++) {
 
 		layoutCampos[i] = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
 		gtk_box_pack_start(GTK_BOX(layoutChutes),layoutCampos[i],0,0,0);
 	}
+	/*************************************************************************/
 
+	/*Checa se o Usuário Preenheu o Campo da Função, se Sim, Prossegue, Caso Contrário Para*/
+	funcao = gtk_entry_get_text(GTK_ENTRY(campoFuncao));
+
+	if (funcao.empty()) {
+
+		gtk_widget_show(funcaoInvalida);
+		funcaoNaoPreenchida = gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_MODAL, GTK_MESSAGE_WARNING, GTK_BUTTONS_OK, "Função Não Preenchida !");
+		return;
+	}
+
+	/*************************************************************************/
+
+	/*Preenche Os Layouts do Campo com Labels para Identificar os Campos e os Campos em Si, Dependedendo da Dimensão do Problema*/
 	for (int i=0;i<ceil(((float)dimensao)/2);i++) {
 
 		std::string label="x[" + patch::to_string(index) + "]: ";
@@ -100,12 +125,15 @@ static void entradaPronta (GtkWidget* widget, gpointer data) {
 
 		}
 	}
+	/*************************************************************************/
 
+	/*Esconde alguns Painéis, Mostra Outros para Manter a Consitência do Programa e Força os Campos a Serem Mostrados*/
 	gtk_widget_set_visible(layoutChuteGeral,true);
 	gtk_widget_set_visible(layoutRespostaGeral,false);
 	gtk_widget_set_visible(layoutRespostaFuncao,false);
 	gtk_window_resize(GTK_WINDOW(window),10,10);
 	gtk_widget_show_all(layoutChutes);
+	/*************************************************************************/
 }
 
 static void chutesProntos (GtkWidget* widget, gpointer data) {
@@ -229,6 +257,21 @@ void preparaRespostas () {
 	/*---------------------------------------------------------------------------------------*/
 }
 
+void preparaAvisos () {
+
+	/*Criada Janela de Aviso Para Função Não Preenchida*/
+	funcaoNaoPreenchida = gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_MODAL, GTK_MESSAGE_WARNING, GTK_BUTTONS_OK, "Função Não Preenchida !");
+	/*---------------------------------------------------------------------------------------*/
+
+	/*Criada Janela de Aviso Para Função Inválida*/
+	funcaoInvalida = gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_MODAL, GTK_MESSAGE_WARNING, GTK_BUTTONS_CLOSE, "Função Inválida !");
+	/*---------------------------------------------------------------------------------------*/
+
+	/*Criada Janela de Aviso Para Campo(s) Vazios*/
+	CampoNaoPreenchido = gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_MODAL, GTK_MESSAGE_WARNING, GTK_BUTTONS_CLOSE, "Campo Não Prenchido !");
+	/*---------------------------------------------------------------------------------------*/
+}
+
 int main(int argc, char *argv[]){
 
 	gtk_init(&argc, &argv);
@@ -245,6 +288,7 @@ int main(int argc, char *argv[]){
 	preparaEntradas();
 	preparaChutes();
 	preparaRespostas();
+	preparaAvisos();
 
 	g_object_unref(builder);
  
