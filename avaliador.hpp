@@ -8,7 +8,8 @@
  * @brief      prepara a funcao recebida como string para que possa ser futuramente avaliada
  * 			   a funcao deve ser em funcao de x0, x1, ..., xn , do contrario, nao vai funcionar
  *
- * @param      x                  vetor das variaveis de decisao (deve ser mandado por referencia para se associar a expressao)
+ * @param      x                  vetor das variaveis de decisao (deve ser mandado por referencia para se associar a 
+ * 								  expressao e deve ter tamanho num_vars + 1 (ultimo campo eh o lamda))
  * @param[in]  num_vars           Number variaveis de decisao do problema
  * @param[in]  expression_string  A string que contem a expression 
  *

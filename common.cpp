@@ -31,7 +31,7 @@ double get_first_derivativeN(exprtk::expression<double> funcao, double *x, int v
 
 		p = (func_mais_h - func_menos_h) / (2 * h);
 
-		if (abs(p - q) < err)
+		if (std::abs(p - q) < err)
 			break;
 	}
 
@@ -72,13 +72,12 @@ double get_second_derivativeN(exprtk::expression<double> funcao, double *x, int 
 
 		p = (func_mais_h - 2 * func_x + func_menos_h) / std::pow((2 * h), 2);
 
-		if (abs(p - q) < err)
+		if (std::abs(p - q) < err)
 			break;
 	}
 
 	return p;
 }
-
 
 double min_newton(exprtk::expression<double> funcao, double *x, int var_index, double lower_bound, double upper_bound, double err) {
 	double derivada_primera, derivada_segunda, x_tmp, x_atual, x_prox;
@@ -107,7 +106,7 @@ double min_newton(exprtk::expression<double> funcao, double *x, int var_index, d
 		/* se a derivada primera da funcao no ponto atual eh menor que o erro aceitavel ou 
            se o modulo da diferenca entre o x anterior e o x atual dividido pelo maior entre 1 e o ponto atual eh menor que o erro aceitavel
         */
-		if ((abs(derivada_primera) < err) || ((abs(x_prox - x_atual) / std::max(x_prox, 1.)) < err))
+		if ((std::abs(derivada_primera) < err) || ((std::abs(x_prox - x_atual) / std::max(x_prox, 1.)) < err))
 			return x_prox;
 		
         x_atual = x_prox;
@@ -124,10 +123,68 @@ double get_norma2 (double *vetor, int tamamnho) {
 }	
 
 double* get_soma_vetor (double *vetorA, double *vetorB, int tamanho) {
-	double* vetor_soma = (double*) malloc(tamanho * sizeof(double));
+	double* vetor_resu = (double*) malloc(tamanho * sizeof(double));
 
 	for (int i = 0; i < tamanho; i++)
-		vetor_soma[i] = vetorA[i] + vetorB[i];
+		vetor_resu[i] = vetorA[i] + vetorB[i];
 
-	return vetor_soma;
+	return vetor_resu;
+}
+
+double* get_sub_vetor (double *vetorA, double *vetorB, int tamanho) {
+	double* vetor_resu = (double*) malloc(tamanho * sizeof(double));
+
+	for (int i = 0; i < tamanho; i++)
+		vetor_resu[i] = vetorA[i] - vetorB[i];
+
+	return vetor_resu;
+}
+
+double* get_const_mult_vetor (double constante, double *vetor, int tamanho) {
+	double* vetor_resu = (double*) malloc(tamanho * sizeof(double));
+
+	for (int i = 0; i < tamanho; i++)
+		vetor_resu[i] = constante * vetor[i];
+
+	return vetor_resu;
+}
+
+std::string transforma_string (std::string funcao, double *x, double *d, int var_index) {
+  std::string nova_funcao;
+
+  /* monta o nome da variavel a ser procurada pela string */
+  std::string var_name = "x";
+  var_name += std::to_string(var_index);
+
+  while (funcao.length() > 0) {
+  	/* se nao existe mais ocorrencia da variavel na funcao, copia o resto da funcao*/
+    if (funcao.find(var_name) == std::string::npos) {
+      nova_funcao += funcao;
+      break;
+    }
+    /* copia a parte da funcao que nao possui a variavel a ser substituida */
+    nova_funcao += funcao.substr(0, funcao.find(var_name)); 
+    /* remove a parte ja inserida na nova string da string original (para possibilitar encontrar as proxima ocorrencias da 
+     * variavel a ser substituida) */
+    funcao.erase(0,funcao.find(var_name));
+    /* Fazendo a substituicao da variavel */
+    nova_funcao += "( ";
+    nova_funcao += var_name;
+    nova_funcao += " + ";
+    nova_funcao += "lambda ";
+    nova_funcao += "* ";
+    nova_funcao += std::to_string(d[var_index]);
+    nova_funcao += " )";
+    funcao.erase(0,var_name.length());
+  }
+
+  return nova_funcao;
+}
+
+double min_lambda (std::string funcao, double *x, double *d, int num_vars, int var_index, double err) {
+	std::string lambda_func = transforma_string(funcao, x, d, var_index);
+	exprtk::expression<double> func = prepara_func(x, num_vars, lambda_func);
+
+	/* minimiza a funcao com relacao a lambda 'campo fantasma' do vetor x original */
+	return min_newton(func, x, num_vars, x[num_vars], DBL_MAX, err);
 }

@@ -14,6 +14,8 @@ exprtk::expression<double> prepara_func(double *x, int num_vars, std::string exp
 		/* adiciona a string a tabela de simbolos */
 		symbol_table.add_variable(var_name, x[i]);
 	}
+	/* adicionando o lambda a tabela de simbolos e ligando-o ao 'indice fantasma' do vetor x*/
+	symbol_table.add_variable("lambda", x[num_vars]);
 	/* adicionando as demais constantes */
 	symbol_table.add_constants();
 
