@@ -1,6 +1,7 @@
 #include <cmath> 
 #include <algorithm>
 #include <stdlib.h>
+#include <cfloat>
 #include "avaliador.hpp"
 
 /**
