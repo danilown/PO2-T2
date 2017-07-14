@@ -167,7 +167,7 @@ double min_lambda (std::string funcao, double *x, double *d, int num_vars, int v
 	return min_newton(func, x, num_vars, x[num_vars], DBL_MAX, err);
 }
 
-double* coord_ciclicas(std::string funcao, double *x, int num_vars, double err) {
+double* hooke_jeeves(std::string funcao, double *x, int num_vars, double err) {
 	double *vetor_resu = (double*) malloc(num_vars * sizeof(double));
 
 	/* alocando vetor que salvara os valores originais de x */
@@ -198,6 +198,25 @@ double* coord_ciclicas(std::string funcao, double *x, int num_vars, double err) 
 		/* se a norma dois for menor que o erro, termina */
 		if (get_norma2(get_sub_vetor(x, x_ant, num_vars), num_vars) < err)
 			break;
+		else {
+			/* vetor diferenca entre x^k+1 e xk*/
+			double* dif = get_sub_vetor(x, x_ant, num_vars);
+			/* substituindo x0 por x0 + lambda * dif */
+			std::string lambda_func = transforma_string(funcao, x, dif, 0);
+			/* substituindo xi por xi + lambda * dif na funcao ja substituida */
+			for (int i = 1; i < num_vars; i++ )
+				lambda_func = transforma_string(lambda_func, x, dif, i);
+			/* faz o parse da nova expressao */
+			exprtk::expression<double> func = prepara_func(x, num_vars, lambda_func);
+
+			/* minimiza a funcao com relacao a lambda */
+			double lambda = min_newton(func, x, num_vars, x[num_vars], DBL_MAX, err);
+			/* nova aproximacao */
+			for (int i = 0; i < num_vars; i++)
+				x[i] += lambda * d[i];
+
+			free(dif);
+		}
 	}
 	/* copiando o valor de mínimo para retorno */
 	memcpy(vetor_resu, x, num_vars * sizeof(double));
@@ -217,7 +236,7 @@ int main() {
 	double x[num_vars + 1];
 	x[0] = 0;
 	x[1] = 3;
-	double *resu = coord_ciclicas("(x0 - 2)^4 + (x0 - 2x1)^2", x, num_vars, 0.00001);
+	double *resu = hooke_jeeves("(x0 - 2)^4 + (x0 - 2x1)^2", x, num_vars, 0.00001);
 	for (int i = 0; i < num_vars; i++)
 		printf("%lf\n", resu[i]);
 	printf("originais:\n");

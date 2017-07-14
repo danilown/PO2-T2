@@ -77,17 +77,6 @@ double* get_soma_vetor (double *vetorA, double *vetorB, int tamanho);
  */
 double* get_sub_vetor (double *vetorA, double *vetorB, int tamanho);
 
-
-/**
- * @brief      Determina o vetor resultante da multiplicacao de uma constante e um vetor
- *
- * @param      vetorA   O vetorA
- * @param      vetorB   O vetorB
- * @param[in]  tamanho  O tamanho dos vetores (devem ser iguais);
- *
- * @return     O vetor subtracao resultante.
- */
-
 /**
  * @brief      Determina o vetor resultante da multiplicacao de uma constante e um vetor
  *

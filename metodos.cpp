@@ -44,3 +44,67 @@ double* coord_ciclicas(std::string funcao, double *x, int num_vars, double err) 
 
 	return vetor_resu;
 }
+
+double* hooke_jeeves(std::string funcao, double *x, int num_vars, double err) {
+	double *vetor_resu = (double*) malloc(num_vars * sizeof(double));
+
+	/* alocando vetor que salvara os valores originais de x */
+	double* x_tmp = (double*) malloc(num_vars * sizeof(double));
+	/* alocando vetor que salvara os valores da iteracao anterior */
+	double* x_ant = (double*) malloc(num_vars * sizeof(double));
+	/* alocando vetor direcao zerado */
+	double* d = (double*) calloc(num_vars, sizeof(double));
+	/* salvando os valores originais de x */
+	memcpy(x_tmp, x, num_vars * sizeof(double));
+
+	while (true) {
+		/* salvando os valores da iteracao anterior de x */
+		memcpy(x_ant, x, num_vars * sizeof(double));
+		for (int i = 0; i < num_vars; i++) {
+			/* 'ativando' a direcao i */
+			d[i] = 1;
+			
+			/* determinando o ponto de minimo da funcao com relacao a lambda */
+			double lambda = min_lambda(funcao, x, d, num_vars, i, err);
+			//getchar();
+
+			x[i] += lambda; 
+
+			/* 'desativamento' da direcao k */
+			d[i] = 0;
+		}
+		/* se a norma dois for menor que o erro, termina */
+		if (get_norma2(get_sub_vetor(x, x_ant, num_vars), num_vars) < err)
+			break;
+		else {
+			/* vetor diferenca entre x^k+1 e xk*/
+			double* dif = get_sub_vetor(x, x_ant, num_vars);
+			/* substituindo x0 por x0 + lambda * dif */
+			std::string lambda_func = transforma_string(funcao, x, dif, 0);
+			/* substituindo xi por xi + lambda * dif na funcao ja substituida */
+			for (int i = 1; i < num_vars; i++ )
+				lambda_func = transforma_string(lambda_func, x, dif, i);
+			/* faz o parse da nova expressao */
+			exprtk::expression<double> func = prepara_func(x, num_vars, lambda_func);
+
+			/* minimiza a funcao com relacao a lambda */
+			double lambda = min_newton(func, x, num_vars, x[num_vars], DBL_MAX, err);
+			/* nova aproximacao */
+			for (int i = 0; i < num_vars; i++)
+				x[i] += lambda * d[i];
+
+			free(dif);
+		}
+	}
+	/* copiando o valor de mínimo para retorno */
+	memcpy(vetor_resu, x, num_vars * sizeof(double));
+	/* restaurando os valores originais de *x */
+	memcpy(x, x_tmp, num_vars * sizeof(double));
+
+	/* desalocando */
+	free(x_tmp);
+	free(x_ant);
+	free(d);
+
+	return vetor_resu;
+}
