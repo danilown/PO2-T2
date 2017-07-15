@@ -1,5 +1,16 @@
 #include "avaliador.hpp"
 
+/*Conserta a rotina to_string*/
+namespace patch{
+
+    template < typename T > std::string to_string( const T& n ){
+
+        std::ostringstream stm ;
+        stm << n ;
+        return stm.str() ;
+    }
+}
+
 exprtk::expression<double> prepara_func(double *x, int num_vars, std::string expression_string) {
 
 	exprtk::symbol_table<double> symbol_table;
@@ -10,7 +21,7 @@ exprtk::expression<double> prepara_func(double *x, int num_vars, std::string exp
 	for (int i = 0; i < num_vars; i++) {
 		/* construcao da string de nomes de variaveis. ex.: "x" + "0" = x0 */
 		std::string var_name = "x";
-		var_name += std::to_string(i);
+		var_name += patch::to_string(i);
 		/* adiciona a string a tabela de simbolos */
 		symbol_table.add_variable(var_name, x[i]);
 	}

@@ -1,3 +1,6 @@
+#ifndef COMMON
+#define COMMON
+
 #include <cmath> 
 #include <algorithm>
 #include <stdlib.h>
@@ -30,6 +33,19 @@ double get_first_derivativeN(exprtk::expression<double> funcao, double *x, int v
  */
 double get_second_derivativeN(exprtk::expression<double> funcao, double *x, int var_index, double h, double err) ;
 
+/**
+ * @brief      Calcula o valor da derivada parcial segunda com relacao a uma coordenada var_indexA e depois com relacao a coordenada var_indexB
+ *
+ * @param[in]  funcao     A funcao a ser avaliada
+ * @param      x          vetor das variaveis de decisao (deve ser mandado por referencia pois eh associado a expressao e ja deve estar inicializado)
+ * @param[in]  var_indexA Indice da coordenada que sera derivada primeiramente (ex.: var_indexA = 0 significa derivada com relacao a coordenada x0)
+ * @param[in]  var_indexB Indice da coordenada que sera derivada em seguida (ex.: var_indexB = 0 significa derivada com relacao a coordenada x0)
+ * @param[in]  h          distancia inicial de aproximacao dos pontos
+ * @param[in]  err        Erro tolerado para o valor da derivada
+ *
+ * @return     Valor da derivada segunda com relacao a coordenada dada.
+ */
+double get_second_derivativeN(exprtk::expression<double> funcao, double *x, int var_indexA, int var_indexB, double h, double err);
 
 /**
  * @brief      Minimizacao monovariavel. Determina o ponto de minimo da funcao com relacao a uma variavel num intervalo dado. 
@@ -126,3 +142,41 @@ std::string transforma_string (std::string funcao, double *x, double *d, int var
  * @return     O endereco do vetor gradiente da funcao.
  */
 double* get_gradiente(std::string funcao, double *x, int num_vars, double err);
+
+/**
+ * @brief      Determina a Hessiana da funcao dada.
+ *
+ * @param[in]  funcao    A funcao a ser avaliada
+ * @param      x         Vetor das variaveis de decisao (deve ser mandado por referencia pois eh associado a expressao)
+ * @param[in]  num_vars  Numero de variaveis de dicisao
+ * @param[in]  err       Intervalo de incerteza tolerado para determinacao das derivadas
+ *
+ * @return     O endreco da matriz hessiana.
+ */
+double** get_hessiana(std::string funcao, double *x, int num_vars, double err);
+
+/**
+ * @brief      Resolve um sistema linear do tipo MatrizA * VetorX = VetorB
+ *
+ * @param      matriz_A  A MatrizA
+ * @param[in]  ordem     A ordem a MatrizA
+ * @param      vetor_X   O vetor x
+ * @param      vetor_B   O vetor b
+ */
+void gauss_simples(double** matriz_A, int ordem, double* vetor_X, double* vetor_B);
+
+/**
+ * @brief      Faz a multiplicacao de duas matrizes (matriz_A * matriz_B)
+ *
+ * @param      matriz_A   A matrizA
+ * @param[in]  a_linhas   O numero de linhas que a matrizA possui
+ * @param[in]  a_colunas  O numero de colunas que a matrizA possui
+ * @param      matriz_B   A matrizB
+ * @param[in]  b_linhas   O numero de linhas que a matrizB possui
+ * @param[in]  b_colunas  O numero de colunas que a matrizB possui
+ *
+ * @return     endereco para a matriz resultante da multiplicacao. A matriz sera de a_linhas x b_colunas
+ */
+double** matriz_mult(double** matriz_A, int a_linhas, int a_colunas, double** matriz_B, int b_linhas, int b_colunas);
+
+#endif
