@@ -79,6 +79,94 @@ double get_second_derivativeN(exprtk::expression<double> funcao, double *x, int 
 	return p;
 }
 
+double get_second_derivativeN(exprtk::expression<double> funcao, double *x, int var_indexA, int var_indexB, double h, double err) {
+	/* f1 = f(x[var_indexA]+h, x[var_indexB]+h);
+	 * f2 = f(x[var_indexA]+h, x[var_indexB]-h);
+	 * f3 = f(x[var_indexA]-h, x[var_indexB]+h);
+	 * f4 = f(x[var_indexA]-h, x[var_indexB]-h);
+	 */
+	double f1, f2, f3, f4;
+	double p, q;
+
+	/* F1 */
+	x[var_indexA] += h; 
+	x[var_indexB] += h;
+	f1 = funcao.value();
+	/* restaura o valor anterior de x[var_indexA] e x[var_indexB] */
+	x[var_indexA] -= h; 
+	x[var_indexB] -= h;
+
+	/* F2 */
+	x[var_indexA] += h; 
+	x[var_indexB] -= h;
+	f2 = funcao.value();
+	/* restaura o valor anterior de x[var_indexA] e x[var_indexB] */
+	x[var_indexA] -= h; 
+	x[var_indexB] += h;
+
+	/* F3 */
+	x[var_indexA] -= h; 
+	x[var_indexB] += h;
+	f3 = funcao.value();
+	/* restaura o valor anterior de x[var_indexA] e x[var_indexB] */
+	x[var_indexA] += h; 
+	x[var_indexB] -= h;
+
+	/* F4 */
+	x[var_indexA] -= h; 
+	x[var_indexB] -= h;
+	f4 = funcao.value();
+	/* restaura o valor anterior de x[var_indexA] e x[var_indexB] */
+	x[var_indexA] += h; 
+	x[var_indexB] += h;
+
+	p = (f1 - f2 - f3 + f4) / (4 * h * h);
+
+	for (int i = 0; i < 10; i++) {
+		q = p;
+		h = h / 2;
+
+		/* F1 */
+		x[var_indexA] += h; 
+		x[var_indexB] += h;
+		f1 = funcao.value();
+		/* restaura o valor anterior de x[var_indexA] e x[var_indexB] */
+		x[var_indexA] -= h; 
+		x[var_indexB] -= h;
+
+		/* F2 */
+		x[var_indexA] += h; 
+		x[var_indexB] -= h;
+		f2 = funcao.value();
+		/* restaura o valor anterior de x[var_indexA] e x[var_indexB] */
+		x[var_indexA] -= h; 
+		x[var_indexB] += h;
+
+		/* F3 */
+		x[var_indexA] -= h; 
+		x[var_indexB] += h;
+		f3 = funcao.value();
+		/* restaura o valor anterior de x[var_indexA] e x[var_indexB] */
+		x[var_indexA] += h; 
+		x[var_indexB] -= h;
+
+		/* F4 */
+		x[var_indexA] -= h; 
+		x[var_indexB] -= h;
+		f4 = funcao.value();
+		/* restaura o valor anterior de x[var_indexA] e x[var_indexB] */
+		x[var_indexA] += h; 
+		x[var_indexB] += h;
+
+		p = (f1 - f2 - f3 + f4) / (4 * h * h);
+
+		if (std::abs(p - q) < err)
+			break;
+	}
+	
+	return p;
+} 
+
 double min_newton(exprtk::expression<double> funcao, double *x, int var_index, double lower_bound, double upper_bound, double err) {
 	double derivada_primera, derivada_segunda, x_tmp, x_atual, x_prox;
 
@@ -198,4 +286,52 @@ double* get_gradiente(std::string funcao, double *x, int num_vars, double err) {
 		gradiente[i] = get_first_derivativeN(func, x, i, 1, err);
 
 	return gradiente;
+}
+
+double** get_hessiana(std::string funcao, double *x, int num_vars, double err) {
+	double** hessiana = (double**) malloc(num_vars * sizeof(double*));
+	for (int i = 0; i < num_vars; i++)
+		hessiana[i] = (double*) malloc(num_vars * sizeof(double));
+
+
+	exprtk::expression<double> func = prepara_func(x, num_vars, funcao);
+
+	for (int i = 0; i < num_vars; i++) {
+		for (int j = i; j < num_vars; j++)
+			hessiana[i][j] = get_second_derivativeN(func, x, i, j, 1, 0.1);
+	}
+
+	for (int i = 1; i < num_vars; i++) {
+		for (int j = 0; j < i; j++)
+			hessiana[i][j] = hessiana[j][i];
+	}
+
+	return hessiana;
+}
+
+void retro_subtituicao(double** matriz_A, int ordem, double* vetor_X, double* vetor_B){
+  int i, j;
+
+  for(i = ordem - 1; i >= 0; i--){
+    vetor_X[i] = vetor_B[i];
+    for(j = i + 1; j < ordem; j++){
+      vetor_X[i] -= vetor_X[j] * matriz_A[i][j];
+    }
+    vetor_X[i] = vetor_X[i] / matriz_A[i][i];
+  }
+}
+
+void gauss_simples(double** matriz_A, int ordem, double* vetor_X, double* vetor_B){
+  int i, j, k;
+  double coeficiente;
+
+  for(i = 0;i < ordem - 1 ; i++){ // triangularização da matriz_A
+    for(j = i + 1; j < ordem; j++){
+      coeficiente = matriz_A[j][i] / matriz_A[i][i];
+      for(k = i; k < ordem; k++)
+        matriz_A[j][k] -= coeficiente * matriz_A[i][k];
+      vetor_B[j] -= coeficiente * vetor_B[i];
+    }
+  }
+  retro_subtituicao(matriz_A, ordem, vetor_X, vetor_B);
 }

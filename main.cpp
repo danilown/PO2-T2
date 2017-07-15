@@ -3,23 +3,94 @@
 #include <algorithm>
 #include <cfloat>
 
-double* get_sub_vetor (double *vetorA, double *vetorB, int tamanho) {
-	double* vetor_resu = (double*) malloc(tamanho * sizeof(double));
+/* deriva primeiro em relacao a A e depois deriva de novo com relacao a B*/
+double get_second_derivativeN(exprtk::expression<double> funcao, double *x, int var_indexA, int var_indexB, double h, double err) {
+	/* f1 = f(x[var_indexA]+h, x[var_indexB]+h);
+	 * f2 = f(x[var_indexA]+h, x[var_indexB]-h);
+	 * f3 = f(x[var_indexA]-h, x[var_indexB]+h);
+	 * f4 = f(x[var_indexA]-h, x[var_indexB]-h);
+	 */
+	double f1, f2, f3, f4;
+	double p, q;
 
-	for (int i = 0; i < tamanho; i++)
-		vetor_resu[i] = vetorA[i] - vetorB[i];
+	/* F1 */
+	x[var_indexA] += h; 
+	x[var_indexB] += h;
+	f1 = funcao.value();
+	/* restaura o valor anterior de x[var_indexA] e x[var_indexB] */
+	x[var_indexA] -= h; 
+	x[var_indexB] -= h;
 
-	return vetor_resu;
-}
+	/* F2 */
+	x[var_indexA] += h; 
+	x[var_indexB] -= h;
+	f2 = funcao.value();
+	/* restaura o valor anterior de x[var_indexA] e x[var_indexB] */
+	x[var_indexA] -= h; 
+	x[var_indexB] += h;
 
-double get_norma2 (double *vetor, int tamamnho) {
-	double soma = 0;
+	/* F3 */
+	x[var_indexA] -= h; 
+	x[var_indexB] += h;
+	f3 = funcao.value();
+	/* restaura o valor anterior de x[var_indexA] e x[var_indexB] */
+	x[var_indexA] += h; 
+	x[var_indexB] -= h;
 
-	for (int i = 0; i < tamamnho; i++)
-		soma += std::pow(vetor[i], 2);
+	/* F4 */
+	x[var_indexA] -= h; 
+	x[var_indexB] -= h;
+	f4 = funcao.value();
+	/* restaura o valor anterior de x[var_indexA] e x[var_indexB] */
+	x[var_indexA] += h; 
+	x[var_indexB] += h;
 
-	return std::sqrt(soma);
-}	
+	p = (f1 - f2 - f3 + f4) / (4 * h * h);
+
+	for (int i = 0; i < 10; i++) {
+		q = p;
+		h = h / 2;
+
+		/* F1 */
+		x[var_indexA] += h; 
+		x[var_indexB] += h;
+		f1 = funcao.value();
+		/* restaura o valor anterior de x[var_indexA] e x[var_indexB] */
+		x[var_indexA] -= h; 
+		x[var_indexB] -= h;
+
+		/* F2 */
+		x[var_indexA] += h; 
+		x[var_indexB] -= h;
+		f2 = funcao.value();
+		/* restaura o valor anterior de x[var_indexA] e x[var_indexB] */
+		x[var_indexA] -= h; 
+		x[var_indexB] += h;
+
+		/* F3 */
+		x[var_indexA] -= h; 
+		x[var_indexB] += h;
+		f3 = funcao.value();
+		/* restaura o valor anterior de x[var_indexA] e x[var_indexB] */
+		x[var_indexA] += h; 
+		x[var_indexB] -= h;
+
+		/* F4 */
+		x[var_indexA] -= h; 
+		x[var_indexB] -= h;
+		f4 = funcao.value();
+		/* restaura o valor anterior de x[var_indexA] e x[var_indexB] */
+		x[var_indexA] += h; 
+		x[var_indexB] += h;
+
+		p = (f1 - f2 - f3 + f4) / (4 * h * h);
+
+		if (std::abs(p - q) < err)
+			break;
+	}
+	
+	return p;
+} 
 
 double get_first_derivativeN(exprtk::expression<double> funcao, double *x, int var_index, double h, double err) {
 	double p, q;
@@ -72,11 +143,11 @@ double get_second_derivativeN(exprtk::expression<double> funcao, double *x, int 
 	/* restaura o valor anterior de x */
 	x[var_index] += 2 * h;
 
-	p = (func_mais_h - 2 * func_x + func_menos_h) / pow((2 * h), 2);
+	p = (func_mais_h - 2 * func_x + func_menos_h) / std::pow((2 * h), 2);
 	for (int i = 0; i < 10; i++) {
 		q = p;
 		h = h / 2;
-		
+
 		double func_x = funcao.value();
 
 		x[var_index] += 2 * h;
@@ -89,7 +160,7 @@ double get_second_derivativeN(exprtk::expression<double> funcao, double *x, int 
 		/* restaura o valor anterior de x */
 		x[var_index] += 2 * h;
 
-		p = (func_mais_h - 2 * func_x + func_menos_h) / pow((2 * h), 2);
+		p = (func_mais_h - 2 * func_x + func_menos_h) / std::pow((2 * h), 2);
 
 		if (std::abs(p - q) < err)
 			break;
@@ -98,65 +169,80 @@ double get_second_derivativeN(exprtk::expression<double> funcao, double *x, int 
 	return p;
 }
 
-double min_newton(exprtk::expression<double> funcao, double *x, int var_index, double lower_bound, double upper_bound, double err) {
-	double derivada_primera, derivada_segunda, x_tmp, x_atual, x_prox;
+double get_norma2 (double *vetor, int tamamnho) {
+	double soma = 0;
 
-	x_atual = lower_bound;
-	while (true) {
-		x_tmp = x[var_index];
-		x[var_index] = x_atual;
-		/* calculando a derivada primeira da funcao com relacao a variavel var_index no ponto x_atual */
-		derivada_primera = get_first_derivativeN(funcao, x, var_index, 1, err / 100);
-		/* calculando a derivada segunda da funcao com relacao a variavel var_index no ponto x_atual */
-		derivada_segunda = get_second_derivativeN(funcao, x, var_index, 1, err / 100);
-		/* restaurando o valor de x[var_index] */
-		x[var_index] = x_tmp;
+	for (int i = 0; i < tamamnho; i++)
+		soma += std::pow(vetor[i], 2);
 
-		/* calculando nova aproximacao */
-		x_prox = x_atual - (derivada_primera / derivada_segunda);
+	return std::sqrt(soma);
+}
+double* get_sub_vetor (double *vetorA, double *vetorB, int tamanho) {
+	double* vetor_resu = (double*) malloc(tamanho * sizeof(double));
 
-        x_tmp = x[var_index];
-		x[var_index] = x_prox;
-		/* calculando a derivada primeira da funcao com relacao a variavel var_index no ponto x_prox */
-		derivada_primera = get_first_derivativeN(funcao, x, var_index, 1, err / 100);
-		/* restaurando o valor de x[var_index] */
-		x[var_index] = x_tmp;
+	for (int i = 0; i < tamanho; i++)
+		vetor_resu[i] = vetorA[i] - vetorB[i];
 
-		/* se a derivada primera da funcao no ponto atual eh menor que o erro aceitavel ou 
-           se o modulo da diferenca entre o x anterior e o x atual dividido pelo maior entre 1 e o ponto atual eh menor que o erro aceitavel
-        */
-		if ((std::abs(derivada_primera) < err) || ((std::abs(x_prox - x_atual) / std::max(x_prox, 1.)) < err))
-			return x_prox;
-		
-        x_atual = x_prox;
-	}
-
+	return vetor_resu;
 }
 
-std::string transforma_string (std::string funcao, double *x, double *d, int var_index) {
-  std::string nova_funcao;
+double* get_gradiente(std::string funcao, double *x, int num_vars, double err) {
+	double* gradiente = (double*) malloc(num_vars * sizeof(double));
 
-  std::string var_name = "x";
-  var_name += std::to_string(var_index);
+	exprtk::expression<double> func = prepara_func(x, num_vars, funcao);
 
-  while (funcao.length() > 0) {
-    if (funcao.find(var_name) == std::string::npos) {
-      nova_funcao += funcao;
-      break;
+	for (int i = 0; i < num_vars; i++)
+		gradiente[i] = get_first_derivativeN(func, x, i, 1, err);
+
+	return gradiente;
+}
+
+double** get_hessiana(std::string funcao, double *x, int num_vars, double err) {
+	double** hessiana = (double**) malloc(num_vars * sizeof(double*));
+	for (int i = 0; i < num_vars; i++)
+		hessiana[i] = (double*) malloc(num_vars * sizeof(double));
+
+
+	exprtk::expression<double> func = prepara_func(x, num_vars, funcao);
+
+	for (int i = 0; i < num_vars; i++) {
+		for (int j = i; j < num_vars; j++)
+			hessiana[i][j] = get_second_derivativeN(func, x, i, j, 1, 0.1);
+	}
+
+	for (int i = 1; i < num_vars; i++) {
+		for (int j = 0; j < i; j++)
+			hessiana[i][j] = hessiana[j][i];
+	}
+
+	return hessiana;
+}
+
+void retro_subtituicao(double** matriz_A, int ordem, double* vetor_X, double* vetor_B){
+  int i, j;
+
+  for(i = ordem - 1; i >= 0; i--){
+    vetor_X[i] = vetor_B[i];
+    for(j = i + 1; j < ordem; j++){
+      vetor_X[i] -= vetor_X[j] * matriz_A[i][j];
     }
-    nova_funcao += funcao.substr(0, funcao.find(var_name)); 
-    funcao.erase(0,funcao.find(var_name));
-    nova_funcao += "( ";
-    nova_funcao += var_name;
-    nova_funcao += " + ";
-    nova_funcao += "lambda ";
-    nova_funcao += "* ";
-    nova_funcao += std::to_string(d[var_index]);
-    nova_funcao += " )";
-    funcao.erase(0,var_name.length());
+    vetor_X[i] = vetor_X[i] / matriz_A[i][i];
   }
+}
 
-  return nova_funcao;
+void gauss_simples(double** matriz_A, int ordem, double* vetor_X, double* vetor_B){
+  int i, j, k;
+  double coeficiente;
+
+  for(i = 0;i < ordem - 1 ; i++){ // triangularização da matriz_A
+    for(j = i + 1; j < ordem; j++){
+      coeficiente = matriz_A[j][i] / matriz_A[i][i];
+      for(k = i; k < ordem; k++)
+        matriz_A[j][k] -= coeficiente * matriz_A[i][k];
+      vetor_B[j] -= coeficiente * vetor_B[i];
+    }
+  }
+  retro_subtituicao(matriz_A, ordem, vetor_X, vetor_B);
 }
 
 double* get_const_mult_vetor (double constante, double *vetor, int tamanho) {
@@ -168,56 +254,58 @@ double* get_const_mult_vetor (double constante, double *vetor, int tamanho) {
 	return vetor_resu;
 }
 
-double* get_gradiente(std::string funcao, double *x, int num_vars, double err){
-	double* gradiente = (double*) malloc(num_vars * sizeof(double));
-
-	exprtk::expression<double> func = prepara_func(x, num_vars, funcao);
-
-	for (int i = 0; i < num_vars; i++)
-		gradiente[i] = get_first_derivativeN(func, x, i, 1, err);
-
-	return gradiente;
-}
-
-double* passo_descendente(std::string funcao, double *x, int num_vars, double err) {
+double* newton(std::string funcao, double *x, int num_vars, double err) {
 	double *vetor_resu = (double*) malloc(num_vars * sizeof(double));
 
 	/* alocando vetor que salvara os valores originais de x */
 	double* x_tmp = (double*) malloc(num_vars * sizeof(double));
 	/* vetor direcao */
 	double* d;
+	/* vetor solucao do sistema */
+	double* w = (double*) malloc(num_vars * sizeof(double));
+	/* alocando vetor que salvara os valores da iteracao anterior */
+	double* x_ant = (double*) malloc(num_vars * sizeof(double));
 	/* salvando os valores originais de x */
 	memcpy(x_tmp, x, num_vars * sizeof(double));
 
 	/* calcula o gradiente no ponto */
 	double* gradiente = get_gradiente(funcao, x, num_vars, err);
+	
+	while (true) {
+		/* salvando os valores da iteracao anterior de x */
+		memcpy(x_ant, x, num_vars * sizeof(double));
 
-	while (get_norma2(gradiente, num_vars) > err) {
+		double** hessiana = get_hessiana(funcao, x, num_vars, err);
+
 		/* d = -gradiente */
 		d = get_const_mult_vetor(-1, gradiente, num_vars);
 		
-		/* substituindo x0 por x0 + lambda * d */
-		std::string lambda_func = transforma_string(funcao, x, d, 0);
-		/* substituindo xi por xi + lambda * dif na funcao ja substituida */
-			for (int i = 1; i < num_vars; i++ )
-				lambda_func = transforma_string(lambda_func, x, d, i);
-			/* faz o parse da nova expressao */
-			exprtk::expression<double> func = prepara_func(x, num_vars, lambda_func);
+		gauss_simples(hessiana, num_vars, w, d);
 
-		/* minimiza a funcao com relacao a lambda */
-		double lambda = min_newton(func, x, num_vars, x[num_vars], DBL_MAX, err);
-		/* xk+1 = xk + lambda * d (nova aproximacao) */
+		/* xk+1 = xk + w (nova aproximacao) */
 		for (int i = 0; i < num_vars; i++)
-			x[i] += lambda * d[i];
+			x[i] += w[i];
 
-		/* liberando o vetor d e o gradiente (serao realocados na proxima iteracao) */
+
+		double* dif = get_sub_vetor(x, x_ant, num_vars);
+		if ((get_norma2(gradiente, num_vars) < err) || (get_norma2(dif, num_vars) < err)) {
+			free(d);
+			free(gradiente);
+			free(hessiana);
+			free(dif);
+			break;
+		}
+
+		/* liberando o vetor d, o gradiente e a hessiana (serao realocados na proxima iteracao) */
 		free(d);
 		free(gradiente);
+		free(hessiana);
 
 		/* calculando o gradiente no novo ponto */
 		gradiente = get_gradiente(funcao, x, num_vars, err);
 
 	}
+	
 	/* copiando o valor de mínimo para retorno */
 	memcpy(vetor_resu, x, num_vars * sizeof(double));
 	/* restaurando os valores originais de *x */
@@ -225,6 +313,8 @@ double* passo_descendente(std::string funcao, double *x, int num_vars, double er
 
 	/* desalocando */
 	free(x_tmp);
+	free(w);
+	free(x_ant);
 
 	return vetor_resu;
 }
@@ -234,11 +324,18 @@ int main() {
 	double x[num_vars + 1];
 	x[0] = 0;
 	x[1] = 3;
-	double *resu = passo_descendente("(x0 - 2)^4 + (x0 - 2x1)^2", x, num_vars, 0.1);
-	for (int i = 0; i < num_vars; i++)
-		printf("%lf\n", resu[i]);
-	printf("originais:\n");
-	for (int i = 0; i < num_vars; i++)
-		printf("%lf\n", x[i]);
+	/*double** hessiana =  get_hessiana("(x0-2)^4 + (x0-2x1)^2", x, num_vars, 0.1);
+	printf("Matriz hessian de f\n");
+	for (int i = 0 ; i < num_vars; i++) {
+		for (int j = 0; j < num_vars; j++)
+			printf("%lf ", hessiana[i][j]);
+		printf("\n");
+	}*/
+	//double resu = get_second_derivativeN(funcao, x, 1, 1, 0.1);
+	double* resu = newton("(x0-2)^4 + (x0-2x1)^2", x, num_vars, 0.1);
+	for (int j = 0; j < num_vars; j++)
+			printf("%lf ", resu[j]);
+	printf("\n");
+
 	return 0;
 }

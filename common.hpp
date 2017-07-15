@@ -30,6 +30,19 @@ double get_first_derivativeN(exprtk::expression<double> funcao, double *x, int v
  */
 double get_second_derivativeN(exprtk::expression<double> funcao, double *x, int var_index, double h, double err) ;
 
+/**
+ * @brief      Calcula o valor da derivada parcial segunda com relacao a uma coordenada var_indexA e depois com relacao a coordenada var_indexB
+ *
+ * @param[in]  funcao     A funcao a ser avaliada
+ * @param      x          vetor das variaveis de decisao (deve ser mandado por referencia pois eh associado a expressao e ja deve estar inicializado)
+ * @param[in]  var_indexA Indice da coordenada que sera derivada primeiramente (ex.: var_indexA = 0 significa derivada com relacao a coordenada x0)
+ * @param[in]  var_indexB Indice da coordenada que sera derivada em seguida (ex.: var_indexB = 0 significa derivada com relacao a coordenada x0)
+ * @param[in]  h          distancia inicial de aproximacao dos pontos
+ * @param[in]  err        Erro tolerado para o valor da derivada
+ *
+ * @return     Valor da derivada segunda com relacao a coordenada dada.
+ */
+double get_second_derivativeN(exprtk::expression<double> funcao, double *x, int var_indexA, int var_indexB, double h, double err);
 
 /**
  * @brief      Minimizacao monovariavel. Determina o ponto de minimo da funcao com relacao a uma variavel num intervalo dado. 
