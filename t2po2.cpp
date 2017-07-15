@@ -94,7 +94,7 @@ void limpaCriaPainel(GtkWidget *painelPrincipal,GtkWidget *paineisAuxiliares[]) 
 	/*************************************************************************/
 }
 
-void preenchePaineis(GtkWidget *paineisPreenchidos[],GtkWidget *camposInseridos[]) {
+void preenchePaineis(GtkWidget *paineisPreenchidos[],GtkWidget *camposInseridos[],bool editavel) {
 
 	int index = 0;
 
@@ -109,6 +109,11 @@ void preenchePaineis(GtkWidget *paineisPreenchidos[],GtkWidget *camposInseridos[
 
 		camposInseridos[index] = gtk_entry_new();
 
+		if (!editavel) {
+
+			gtk_widget_set_can_focus(camposInseridos[index],false);
+		}
+
 		gtk_box_pack_start(GTK_BOX(paineisPreenchidos[i]),camposInseridos[index],false,false,2);
 
 		index++;
@@ -121,6 +126,11 @@ void preenchePaineis(GtkWidget *paineisPreenchidos[],GtkWidget *camposInseridos[
 			gtk_box_pack_start(GTK_BOX(paineisPreenchidos[i]),temp2,false,false,0);
 
 			camposInseridos[index] = gtk_entry_new();
+
+			if (!editavel) {
+
+				gtk_widget_set_can_focus(camposInseridos[index],false);
+			}
 
 			gtk_box_pack_start(GTK_BOX(paineisPreenchidos[i]),camposInseridos[index],false,false,2);
 
@@ -258,7 +268,7 @@ static void entradaPronta (GtkWidget* widget, gpointer data) {
 	/*************************************************************************/
 
 	/*Preenche Os Layouts do Campo com Labels para Identificar os Campos e os Campos em Si, Dependedendo da Dimensão do Problema*/
-	preenchePaineis(layoutCampos,chutes);
+	preenchePaineis(layoutCampos,chutes,true);
 	/*************************************************************************/
 
 	/*Esconde alguns Painéis, Mostra Outros para Manter a Consitência do Programa e Força os Campos a Serem Mostrados*/
@@ -306,7 +316,7 @@ static void chutesProntos (GtkWidget* widget, gpointer data) {
 	/*************************************************************************/
 
 	/*Preenche Os Layouts do Campo com Labels para Identificar os Campos e os Campos em Si, Dependedendo da Dimensão do Problema*/
-	preenchePaineis(layoutCampos2,resultado);
+	preenchePaineis(layoutCampos2,resultado,false);
 	/*************************************************************************/
 
 	/*Preenche os Campos de Resposta com os Valores Obtidos do Cálculo do Método*/
