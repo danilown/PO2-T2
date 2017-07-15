@@ -139,3 +139,25 @@ std::string transforma_string (std::string funcao, double *x, double *d, int var
  * @return     O endereco do vetor gradiente da funcao.
  */
 double* get_gradiente(std::string funcao, double *x, int num_vars, double err);
+
+/**
+ * @brief      Determina a Hessiana da funcao dada.
+ *
+ * @param[in]  funcao    A funcao a ser avaliada
+ * @param      x         Vetor das variaveis de decisao (deve ser mandado por referencia pois eh associado a expressao)
+ * @param[in]  num_vars  Numero de variaveis de dicisao
+ * @param[in]  err       Intervalo de incerteza tolerado para determinacao das derivadas
+ *
+ * @return     O endreco da matriz hessiana.
+ */
+double** get_hessiana(std::string funcao, double *x, int num_vars, double err);
+
+/**
+ * @brief      Resolve um sistema linear do tipo MatrizA * VetorX = VetorB
+ *
+ * @param      matriz_A  A MatrizA
+ * @param[in]  ordem     A ordem a MatrizA
+ * @param      vetor_X   O vetor x
+ * @param      vetor_B   O vetor b
+ */
+void gauss_simples(double** matriz_A, int ordem, double* vetor_X, double* vetor_B);
