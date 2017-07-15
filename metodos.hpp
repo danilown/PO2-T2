@@ -1,6 +1,3 @@
-#ifndef METODOS
-#define METODOS
-
 #include "avaliador.hpp"
 #include "common.hpp"
 #include <cfloat>
@@ -51,10 +48,5 @@ double* passo_descendente(std::string funcao, double *x, int num_vars, double er
  *
  * @return     vetor contendo os pontos de minimo.
  */
-<<<<<<< HEAD
-double* newton(std::string funcao, double *x, int num_vars, double err);
 
-#endif
-=======
 double* newton(std::string funcao, double *x, int num_vars, double err);
->>>>>>> 899819608bfadcbc9556b18145f28efd1b726f58
