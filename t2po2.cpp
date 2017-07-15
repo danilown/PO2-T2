@@ -2,6 +2,9 @@
 #include <math.h>
 #include <string>
 #include <sstream>
+#include <cstdlib>
+#include <cerrno>
+#include <stddef.h>
 
 /*Conserta a rotina to_string*/
 namespace patch{
@@ -26,21 +29,19 @@ GtkWidget *campoFuncao;
 GtkWidget *spinnerDim;
 GtkWidget *spinnerErro;
 GtkWidget *botaoOk;
-std::string funcao;
 /*Variáveis de Acesso aos Elementos de Chute*/
 GtkWidget *layoutChuteGeral;
 GtkWidget *layoutChutes;
 GtkWidget *botaoOk2;
 /*Variáveis de Acesso aos Elementos de Resposta*/
 GtkWidget *layoutRespostaGeral;
-GtkWidget *layoutRespostaFuncao;
 GtkWidget *layoutRespostas;
+GtkWidget *layoutRespostaFuncao;
 GtkWidget *funcaoOtima;
 
 /*Variáveis de Controle da Entrada Dinâmica*/
 GtkWidget *layoutCampos[MAIOR_DIMENSAO/2];
 GtkWidget *chutes[MAIOR_DIMENSAO];
-int dimensao;
 /*Variáveis de Controle da Saída Dinâmica*/
 GtkWidget *layoutCampos2[MAIOR_DIMENSAO/2];
 GtkWidget *resultado[MAIOR_DIMENSAO];
@@ -52,6 +53,17 @@ GtkAdjustment *adjustment;
 GtkWidget *funcaoNaoPreenchida;
 GtkWidget *funcaoInvalida;
 GtkWidget *campoNaoPreenchido;
+GtkWidget *campoInvalido;
+
+/*Variáveis Adquiridas da Interface*/
+int metodo;
+std::string funcao;
+int dimensao;
+double erro;
+double valorChute[MAIOR_DIMENSAO+1];
+
+/*Variável Adquirida do Cálculo*/
+double resposta[MAIOR_DIMENSAO];
 
 gboolean escondeJanela(GtkWidget *widget, GdkEvent *event, gpointer data){
 
@@ -59,39 +71,177 @@ gboolean escondeJanela(GtkWidget *widget, GdkEvent *event, gpointer data){
     return TRUE;
 }
 
-static void entradaPronta (GtkWidget* widget, gpointer data) {
+void limpaCriaPainel(GtkWidget *painelPrincipal,GtkWidget *paineisAuxiliares[]) {
 
-	/*Variáveis de Suporte ás Operações Realizadas Abaixo*/
-	int index = 0;
-
-	dimensao = gtk_spin_button_get_value(GTK_SPIN_BUTTON(spinnerDim));
-
-	int precisao = gtk_spin_button_get_value(GTK_SPIN_BUTTON(spinnerErro));
-	double erro = pow(10,-precisao);
-	/*************************************************************************/
 
 	/*Limpa o Painel Com os Campos para que Eles Não se Acumulem*/
-	GList *children, *iter;
+	GList *itensPainel, *iterador;
 
-	children = gtk_container_get_children(GTK_CONTAINER(layoutChutes));
+	itensPainel = gtk_container_get_children(GTK_CONTAINER(painelPrincipal));
 
-	for(iter = children; iter != NULL; iter = g_list_next(iter))
-  		gtk_widget_destroy(GTK_WIDGET(iter->data));
+	for(iterador = itensPainel; iterador != NULL; iterador = g_list_next(iterador))
+  		gtk_widget_destroy(GTK_WIDGET(iterador->data));
 
-	g_list_free(children);
+	g_list_free(itensPainel);
 	/*************************************************************************/
 
 	/*Inicia os Layouts que Conterão os Campos, e os Inclui no Layout Principal*/	
 	for (int i=0;i<MAIOR_DIMENSAO/2;i++) {
 
-		layoutCampos[i] = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-		gtk_box_pack_start(GTK_BOX(layoutChutes),layoutCampos[i],0,0,0);
+		paineisAuxiliares[i] = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+		gtk_box_pack_start(GTK_BOX(painelPrincipal),paineisAuxiliares[i],0,0,0);
+	}
+	/*************************************************************************/
+}
+
+void preenchePaineis(GtkWidget *paineisPreenchidos[],GtkWidget *camposInseridos[]) {
+
+	int index = 0;
+
+	/*Preenche Os Layouts do Campo com Labels para Identificar os Campos e os Campos em Si, Dependedendo da Dimensão do Problema*/
+	for (int i=0;i<ceil(((float)dimensao)/2);i++) {
+
+		std::string label="x[" + patch::to_string(index) + "]: ";
+		
+		GtkWidget *temp = gtk_label_new(&label[0]);
+		
+		gtk_box_pack_start(GTK_BOX(paineisPreenchidos[i]),temp,false,false,0);
+
+		camposInseridos[index] = gtk_entry_new();
+
+		gtk_box_pack_start(GTK_BOX(paineisPreenchidos[i]),camposInseridos[index],false,false,2);
+
+		index++;
+
+		if (2*(i+1) <= dimensao) {
+
+			label="x[" + patch::to_string(index) + "]: ";
+			GtkWidget *temp2 = gtk_label_new(&label[0]);
+
+			gtk_box_pack_start(GTK_BOX(paineisPreenchidos[i]),temp2,false,false,0);
+
+			camposInseridos[index] = gtk_entry_new();
+
+			gtk_box_pack_start(GTK_BOX(paineisPreenchidos[i]),camposInseridos[index],false,false,2);
+
+			index++;
+
+		}
 	}
 	/*************************************************************************/
 
-	/*Checa se o Usuário Preenheu o Campo da Função, se Sim, Prossegue, Caso Contrário Para*/
-	funcao = gtk_entry_get_text(GTK_ENTRY(campoFuncao));
+}
 
+bool camposPreenchidos () {
+
+	for (int i=0;i<dimensao; i++) {
+
+		if (gtk_entry_get_text_length(GTK_ENTRY(chutes[i])) == 0) {
+
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool camposInvalidos () {
+
+	for (int i=0;i<dimensao; i++) {
+
+		std::string aux = gtk_entry_get_text(GTK_ENTRY(chutes[i]));
+		char* aux2;
+
+		if (aux.find(".") != std::string::npos) {
+
+			return true;
+		}
+
+		resposta[i] = std::strtod(&aux[0],&aux2);
+		g_print("%f\n",resposta[i]);
+		
+		if (resposta[i] == 0 && aux2 == aux) {
+
+			return true;
+		}
+
+		else if (errno == ERANGE){
+
+			errno = 0;
+            return true;
+        }
+
+	}
+
+	return false;
+}
+
+void chamaMetodo () {
+
+	switch (metodo) {
+
+		case 0: {
+
+			g_print("Coordenadas Cíclicas\n");
+			break;
+		}
+
+		case 1: {
+
+			g_print("Hooke & Jeeves\n");
+			break;
+		}
+
+		case 2: {
+
+			g_print("Newton\n");
+			break;
+		}
+
+		case 3: {
+
+			g_print("Passo Descendente\n");
+			break;
+		}
+
+		case 4: {
+
+			g_print("Gradiente Generalizado\n");
+			break;
+		}
+
+		case 5: {
+
+			g_print("Fletcher & Reeves\n");
+			break;
+		}
+	}
+}
+
+void preencheResposta () {
+
+	for (int i=0;i<dimensao;i++) {
+
+		g_print("Preenchido Campo %d\n",i);
+		//gtk_entry_set_text(GTK_ENTRY(resultado[i]),patch::to_string(resposta[i]));
+	}
+}
+
+static void entradaPronta (GtkWidget* widget, gpointer data) {
+
+	int precisao = gtk_spin_button_get_value(GTK_SPIN_BUTTON(spinnerErro));
+
+	/*Variáveis de Suporte ás Operações Realizadas Abaixo*/
+	dimensao = gtk_spin_button_get_value(GTK_SPIN_BUTTON(spinnerDim));
+	erro = pow(10,-precisao);
+	funcao = gtk_entry_get_text(GTK_ENTRY(campoFuncao));
+	/*************************************************************************/
+
+	/*Limpa o Painel Com os Campos para que Eles Não se Acumulem e Inicia os Layouts que Conterão os Campos, e os Inclui no Layout Principal*/
+	limpaCriaPainel(layoutChutes,layoutCampos);
+	/*************************************************************************/
+
+	/*Checa se o Usuário Preenheu o Campo da Função, se Sim, Prossegue, Caso Contrário Para*/
 	if (funcao.empty()) {
 
 		gtk_widget_show(funcaoNaoPreenchida);
@@ -108,35 +258,7 @@ static void entradaPronta (GtkWidget* widget, gpointer data) {
 	/*************************************************************************/
 
 	/*Preenche Os Layouts do Campo com Labels para Identificar os Campos e os Campos em Si, Dependedendo da Dimensão do Problema*/
-	for (int i=0;i<ceil(((float)dimensao)/2);i++) {
-
-		std::string label="x[" + patch::to_string(index) + "]: ";
-		
-		GtkWidget *temp = gtk_label_new(&label[0]);
-		
-		gtk_box_pack_start(GTK_BOX(layoutCampos[i]),temp,false,false,0);
-
-		chutes[index] = gtk_entry_new();
-
-		gtk_box_pack_start(GTK_BOX(layoutCampos[i]),chutes[index],false,false,2);
-
-		index++;
-
-		if (2*(i+1) <= dimensao) {
-
-			label="x[" + patch::to_string(index) + "]: ";
-			GtkWidget *temp2 = gtk_label_new(&label[0]);
-
-			gtk_box_pack_start(GTK_BOX(layoutCampos[i]),temp2,false,false,0);
-
-			chutes[index] = gtk_entry_new();
-
-			gtk_box_pack_start(GTK_BOX(layoutCampos[i]),chutes[index],false,false,2);
-
-			index++;
-
-		}
-	}
+	preenchePaineis(layoutCampos,chutes);
 	/*************************************************************************/
 
 	/*Esconde alguns Painéis, Mostra Outros para Manter a Consitência do Programa e Força os Campos a Serem Mostrados*/
@@ -150,56 +272,46 @@ static void entradaPronta (GtkWidget* widget, gpointer data) {
 
 static void chutesProntos (GtkWidget* widget, gpointer data) {
 
-	int index = 0;
+	/*Variáveis de Suporte ás Operações Realizadas Abaixo*/
+	metodo = gtk_combo_box_get_active(GTK_COMBO_BOX(comboMetodos));
+	/*************************************************************************/
 
-	int metodo = gtk_combo_box_get_active(GTK_COMBO_BOX(comboMetodos));
+	/*Limpa o Painel Com os Campos para que Eles Não se Acumulem e Inicia os Layouts que Conterão os Campos, e os Inclui no Layout Principal*/
+	limpaCriaPainel(layoutRespostas,layoutCampos2);
+	/*************************************************************************/
 
-	GList *children, *iter;
+	/*Checa se Algum dos Campos do Chute Inicial Não Foi Preenchido*/
+	if (!camposPreenchidos()) {
 
-	children = gtk_container_get_children(GTK_CONTAINER(layoutRespostas));
-
-	for(iter = children; iter != NULL; iter = g_list_next(iter))
-  		gtk_widget_destroy(GTK_WIDGET(iter->data));
-
-	g_list_free(children);
-
-	for (int i=0;i<MAIOR_DIMENSAO/2;i++) {
-
-		layoutCampos2[i] = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-		gtk_box_pack_start(GTK_BOX(layoutRespostas),layoutCampos2[i],0,0,0);
+		gtk_widget_set_visible(layoutRespostaGeral,false);
+		gtk_widget_set_visible(layoutRespostaFuncao,false);
+		gtk_widget_show(campoNaoPreenchido);
+		return;
 	}
+	/*************************************************************************/
 
-	for (int i=0;i<ceil(((float)dimensao)/2);i++) {
+	/*Checa se Algum dos Campos do Chute Inicial é Inválido, ou Seja, Se Não é um Número*/
+	if (camposInvalidos()) {
 
-		std::string label="x[" + patch::to_string(index) + "]: ";
-		
-		GtkWidget *temp = gtk_label_new(&label[0]);
-		
-		gtk_box_pack_start(GTK_BOX(layoutCampos2[i]),temp,false,false,0);
+		gtk_widget_set_visible(layoutRespostaGeral,false);
+		gtk_widget_set_visible(layoutRespostaFuncao,false);
+		gtk_widget_show(campoInvalido);
+		return;
 
-		resultado[index] = gtk_entry_new();
-
-		gtk_widget_set_can_focus(resultado[index],false);
-		gtk_box_pack_start(GTK_BOX(layoutCampos2[i]),resultado[index],false,false,2);
-
-		index++;
-
-		if (2*(i+1) <= dimensao) {
-
-			label="x[" + patch::to_string(index) + "]: ";
-			GtkWidget *temp = gtk_label_new(&label[0]);
-
-			gtk_box_pack_start(GTK_BOX(layoutCampos2[i]),temp,false,false,0);
-
-			resultado[index] = gtk_entry_new();
-
-			gtk_widget_set_can_focus(resultado[index],false);
-			gtk_box_pack_start(GTK_BOX(layoutCampos2[i]),resultado[index],false,false,2);
-
-			index++;
-
-		}
 	}
+	/*************************************************************************/
+
+	/*Checa o Método Escolhido e Passa para Ele os Dados Necesários para o Cálculo*/
+	chamaMetodo();
+	/*************************************************************************/
+
+	/*Preenche Os Layouts do Campo com Labels para Identificar os Campos e os Campos em Si, Dependedendo da Dimensão do Problema*/
+	preenchePaineis(layoutCampos2,resultado);
+	/*************************************************************************/
+
+	/*Preenche os Campos de Resposta com os Valores Obtidos do Cálculo do Método*/
+	preencheResposta();
+	/*************************************************************************/
 
 	gtk_widget_set_visible(layoutRespostaGeral,true);
 	gtk_widget_set_visible(layoutRespostaFuncao,true);
@@ -287,6 +399,12 @@ void preparaAvisos () {
 	campoNaoPreenchido = gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_MODAL, GTK_MESSAGE_WARNING, GTK_BUTTONS_NONE, "Campo Não Prenchido !\nAperte Esc para sair automaticamente.");
 	gtk_window_set_accept_focus(GTK_WINDOW(campoNaoPreenchido),false);
 	g_signal_connect(campoNaoPreenchido, "delete_event", G_CALLBACK(escondeJanela), NULL);
+	/*---------------------------------------------------------------------------------------*/
+
+	/*Criada Janela de Aviso Para Campo(s) Vazios*/
+	campoInvalido = gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_MODAL, GTK_MESSAGE_WARNING, GTK_BUTTONS_NONE, "Campo Inválido !\nApenas Números Reais, Não Infinitos \ne com Parte Decimal Separada por Vírgula !\nAperte Esc para sair automaticamente.");
+	gtk_window_set_accept_focus(GTK_WINDOW(campoInvalido),false);
+	g_signal_connect(campoInvalido, "delete_event", G_CALLBACK(escondeJanela), NULL);
 	/*---------------------------------------------------------------------------------------*/
 }
 
