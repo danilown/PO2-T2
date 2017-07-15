@@ -1,6 +1,3 @@
-#ifndef COMMON
-#define COMMON
-
 #include <cmath> 
 #include <algorithm>
 #include <stdlib.h>
@@ -178,5 +175,3 @@ void gauss_simples(double** matriz_A, int ordem, double* vetor_X, double* vetor_
  * @return     endereco para a matriz resultante da multiplicacao. A matriz sera de a_linhas x b_colunas
  */
 double** matriz_mult(double** matriz_A, int a_linhas, int a_colunas, double** matriz_B, int b_linhas, int b_colunas);
-
-#endif
