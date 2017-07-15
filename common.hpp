@@ -161,3 +161,17 @@ double** get_hessiana(std::string funcao, double *x, int num_vars, double err);
  * @param      vetor_B   O vetor b
  */
 void gauss_simples(double** matriz_A, int ordem, double* vetor_X, double* vetor_B);
+
+/**
+ * @brief      Faz a multiplicacao de duas matrizes (matriz_A * matriz_B)
+ *
+ * @param      matriz_A   A matrizA
+ * @param[in]  a_linhas   O numero de linhas que a matrizA possui
+ * @param[in]  a_colunas  O numero de colunas que a matrizA possui
+ * @param      matriz_B   A matrizB
+ * @param[in]  b_linhas   O numero de linhas que a matrizB possui
+ * @param[in]  b_colunas  O numero de colunas que a matrizB possui
+ *
+ * @return     endereco para a matriz resultante da multiplicacao. A matriz sera de a_linhas x b_colunas
+ */
+double** matriz_mult(double** matriz_A, int a_linhas, int a_colunas, double** matriz_B, int b_linhas, int b_colunas);

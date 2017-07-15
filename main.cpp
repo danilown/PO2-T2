@@ -2,6 +2,9 @@
 #include <cmath> 
 #include <algorithm>
 #include <cfloat>
+#include <iostream>
+
+using namespace std;
 
 /* deriva primeiro em relacao a A e depois deriva de novo com relacao a B*/
 double get_second_derivativeN(exprtk::expression<double> funcao, double *x, int var_indexA, int var_indexB, double h, double err) {
@@ -319,23 +322,62 @@ double* newton(std::string funcao, double *x, int num_vars, double err) {
 	return vetor_resu;
 }
 
+double** matriz_mult(double** matriz_A, int a_linhas, int a_colunas, double** matriz_B, int b_linhas, int b_colunas) {
+	if (a_colunas != b_linhas) {
+		printf("Essas matrizes nao podem ser multiplicadas!\n");
+		exit(EXIT_FAILURE);
+	}
+
+	double** matriz_resu = (double**) calloc(a_linhas, sizeof(double*));
+	for (int i = 0; i < a_linhas; i++)
+		matriz_resu[i] = (double*) calloc(b_colunas, sizeof(double));
+
+	for(int i = 0; i < a_linhas; i++)
+    	for(int j = 0; j < b_colunas; j++)
+        	for(int k = 0; k < a_colunas; k++)
+                matriz_resu[i][j] += matriz_A[i][k] * matriz_B[k][j];
+
+    return matriz_resu;
+}
+
 int main() {
-	int num_vars = 2;
-	double x[num_vars + 1];
-	x[0] = 0;
-	x[1] = 3;
-	/*double** hessiana =  get_hessiana("(x0-2)^4 + (x0-2x1)^2", x, num_vars, 0.1);
-	printf("Matriz hessian de f\n");
-	for (int i = 0 ; i < num_vars; i++) {
-		for (int j = 0; j < num_vars; j++)
-			printf("%lf ", hessiana[i][j]);
+	int n_linhasA = 2;
+	int n_colunasA = 2;
+	int n_linhasB = 2;
+	int n_colunasB = 1;
+
+	double** a = (double**) malloc(n_linhasA * sizeof(double*));
+	for (int i = 0; i < n_linhasA; i++)
+		a[i] = (double*) malloc(n_colunasA * sizeof(double));
+
+
+	double** b = (double**) malloc(n_linhasB * sizeof(double*));
+	for (int i = 0; i < n_linhasB; i++)
+		b[i] = (double*) malloc(n_colunasB * sizeof(double));
+
+	cout << endl << "Enter elements of matrix 1:" << endl;
+    for(int i = 0; i < n_linhasA; i++)
+        for(int j = 0; j < n_colunasA; j++)
+        {
+            cout << "Enter element a" << i + 1 << j + 1 << " : ";
+            cin >> a[i][j];
+        }
+
+   cout << endl << "Enter elements of matrix 2:" << endl;
+    for(int i = 0; i < n_linhasB; i++)
+        for(int j = 0; j < n_colunasB; j++)
+        {
+            cout << "Enter element a" << i + 1 << j + 1 << " : ";
+            cin >> b[i][j];
+        }
+
+    double** resu = matriz_mult(a, n_linhasA, n_colunasA, b, n_linhasB, n_colunasB);
+	printf("Matriz multiplicada: \n");
+	for (int i = 0 ; i < n_linhasA; i++) {
+		for (int j = 0; j < n_colunasB; j++)
+			printf("%lf ", resu[i][j]);
 		printf("\n");
-	}*/
-	//double resu = get_second_derivativeN(funcao, x, 1, 1, 0.1);
-	double* resu = newton("(x0-2)^4 + (x0-2x1)^2", x, num_vars, 0.1);
-	for (int j = 0; j < num_vars; j++)
-			printf("%lf ", resu[j]);
-	printf("\n");
+	}
 
 	return 0;
 }

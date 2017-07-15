@@ -335,3 +335,21 @@ void gauss_simples(double** matriz_A, int ordem, double* vetor_X, double* vetor_
   }
   retro_subtituicao(matriz_A, ordem, vetor_X, vetor_B);
 }
+
+double** matriz_mult(double** matriz_A, int a_linhas, int a_colunas, double** matriz_B, int b_linhas, int b_colunas) {
+	if (a_colunas != b_linhas) {
+		printf("Essas matrizes nao podem ser multiplicadas!\n");
+		exit(EXIT_FAILURE);
+	}
+
+	double** matriz_resu = (double**) calloc(a_linhas, sizeof(double*));
+	for (int i = 0; i < a_linhas; i++)
+		matriz_resu[i] = (double*) calloc(b_colunas, sizeof(double));
+
+	for(int i = 0; i < a_linhas; i++)
+    	for(int j = 0; j < b_colunas; j++)
+        	for(int k = 0; k < a_colunas; k++)
+                matriz_resu[i][j] += matriz_A[i][k] * matriz_B[k][j];
+
+    return matriz_resu;
+}
