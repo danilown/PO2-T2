@@ -4,10 +4,10 @@
 #include <sstream>
 
 /*Conserta a rotina to_string*/
-namespace patch
-{
-    template < typename T > std::string to_string( const T& n )
-    {
+namespace patch{
+
+    template < typename T > std::string to_string( const T& n ){
+
         std::ostringstream stm ;
         stm << n ;
         return stm.str() ;
@@ -51,7 +51,13 @@ GtkAdjustment *adjustment;
 /*Variáveis das Janelas de Aviso*/
 GtkWidget *funcaoNaoPreenchida;
 GtkWidget *funcaoInvalida;
-GtkWidget *CampoNaoPreenchido;
+GtkWidget *campoNaoPreenchido;
+
+gboolean escondeJanela(GtkWidget *widget, GdkEvent *event, gpointer data){
+
+    gtk_widget_hide(widget);
+    return TRUE;
+}
 
 static void entradaPronta (GtkWidget* widget, gpointer data) {
 
@@ -88,11 +94,17 @@ static void entradaPronta (GtkWidget* widget, gpointer data) {
 
 	if (funcao.empty()) {
 
-		gtk_widget_show(funcaoInvalida);
-		funcaoNaoPreenchida = gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_MODAL, GTK_MESSAGE_WARNING, GTK_BUTTONS_OK, "Função Não Preenchida !");
+		gtk_widget_show(funcaoNaoPreenchida);
 		return;
 	}
+	/*************************************************************************/
+	
+	/*Checa se a Função do Usuário Possui ao Menos em x[0]*/
+	if (funcao.find("x[0]")==std::string::npos) {
 
+		gtk_widget_show(funcaoInvalida);
+		return;
+	}
 	/*************************************************************************/
 
 	/*Preenche Os Layouts do Campo com Labels para Identificar os Campos e os Campos em Si, Dependedendo da Dimensão do Problema*/
@@ -260,15 +272,21 @@ void preparaRespostas () {
 void preparaAvisos () {
 
 	/*Criada Janela de Aviso Para Função Não Preenchida*/
-	funcaoNaoPreenchida = gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_MODAL, GTK_MESSAGE_WARNING, GTK_BUTTONS_OK, "Função Não Preenchida !");
+	funcaoNaoPreenchida = gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_MODAL, GTK_MESSAGE_WARNING, GTK_BUTTONS_NONE, "Função Não Preenchida !\nAperte Esc para sair automaticamente.");
+	gtk_window_set_accept_focus(GTK_WINDOW(funcaoNaoPreenchida),false);
+	g_signal_connect(funcaoNaoPreenchida, "delete_event", G_CALLBACK(escondeJanela), NULL);
 	/*---------------------------------------------------------------------------------------*/
 
 	/*Criada Janela de Aviso Para Função Inválida*/
-	funcaoInvalida = gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_MODAL, GTK_MESSAGE_WARNING, GTK_BUTTONS_CLOSE, "Função Inválida !");
+	funcaoInvalida = gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_MODAL, GTK_MESSAGE_WARNING, GTK_BUTTONS_NONE, "Função Inválida !\nÍndice do Vetor x Deve Começar em 0!\nAperte Esc para sair automaticamente.");
+	gtk_window_set_accept_focus(GTK_WINDOW(funcaoInvalida),false);
+	g_signal_connect(funcaoInvalida, "delete_event", G_CALLBACK(escondeJanela), NULL);
 	/*---------------------------------------------------------------------------------------*/
 
 	/*Criada Janela de Aviso Para Campo(s) Vazios*/
-	CampoNaoPreenchido = gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_MODAL, GTK_MESSAGE_WARNING, GTK_BUTTONS_CLOSE, "Campo Não Prenchido !");
+	campoNaoPreenchido = gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_MODAL, GTK_MESSAGE_WARNING, GTK_BUTTONS_NONE, "Campo Não Prenchido !\nAperte Esc para sair automaticamente.");
+	gtk_window_set_accept_focus(GTK_WINDOW(campoNaoPreenchido),false);
+	g_signal_connect(campoNaoPreenchido, "delete_event", G_CALLBACK(escondeJanela), NULL);
 	/*---------------------------------------------------------------------------------------*/
 }
 
