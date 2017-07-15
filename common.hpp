@@ -47,7 +47,7 @@ double get_second_derivativeN(exprtk::expression<double> funcao, double *x, int 
 double min_newton(exprtk::expression<double> funcao, double *x, int var_index, double lower_bound, double upper_bound, double err);
 
 /**
- * @brief      Retorna o valor da norma 2 de um dado vetor
+ * @brief      Retorna o valor da norma 2 de um dado vetor. O valor resultante eh sempre positivo.
  *
  * @param      vetor     O vetor a ser calculada a norma
  * @param[in]  tamamnho  O tamanho do vetor
@@ -114,3 +114,15 @@ double min_lambda (std::string funcao, double *x, double *d, int num_vars, int v
  * @return     retorna a string da funcao com as variaveis substituidas
  */
 std::string transforma_string (std::string funcao, double *x, double *d, int var_index);
+
+/**
+ * @brief      Calcula (e alloca) o vetor gradiente de uma dada funcao.
+ *
+ * @param[in]  funcao    A funcao a ser avaliada
+ * @param      x         Vetor das variaveis de decisao (deve ser mandado por referencia pois eh associado a expressao)
+ * @param[in]  num_vars  Numero de variaveis de dicisao
+ * @param[in]  err       Intervalo de incerteza tolerado para determinacao das derivadas
+ *
+ * @return     O endereco do vetor gradiente da funcao.
+ */
+double* get_gradiente(std::string funcao, double *x, int num_vars, double err);

@@ -108,3 +108,53 @@ double* hooke_jeeves(std::string funcao, double *x, int num_vars, double err) {
 
 	return vetor_resu;
 }
+
+double* passo_descendente(std::string funcao, double *x, int num_vars, double err) {
+	double *vetor_resu = (double*) malloc(num_vars * sizeof(double));
+
+	/* alocando vetor que salvara os valores originais de x */
+	double* x_tmp = (double*) malloc(num_vars * sizeof(double));
+	/* vetor direcao */
+	double* d;
+	/* salvando os valores originais de x */
+	memcpy(x_tmp, x, num_vars * sizeof(double));
+
+	/* calcula o gradiente no ponto */
+	double* gradiente = get_gradiente(funcao, x, num_vars, err);
+	
+	while (get_norma2(gradiente, num_vars) > err) {
+		/* d = -gradiente */
+		d = get_const_mult_vetor(-1, gradiente, num_vars);
+		
+		/* substituindo x0 por x0 + lambda * d */
+		std::string lambda_func = transforma_string(funcao, x, d, 0);
+		/* substituindo xi por xi + lambda * dif na funcao ja substituida */
+			for (int i = 1; i < num_vars; i++ )
+				lambda_func = transforma_string(lambda_func, x, d, i);
+			/* faz o parse da nova expressao */
+			exprtk::expression<double> func = prepara_func(x, num_vars, lambda_func);
+
+		/* minimiza a funcao com relacao a lambda */
+		double lambda = min_newton(func, x, num_vars, x[num_vars], DBL_MAX, err);
+		/* xk+1 = xk + lambda * d (nova aproximacao) */
+		for (int i = 0; i < num_vars; i++)
+			x[i] += lambda * d[i];
+
+		/* liberando o vetor d e o gradiente (serao realocados na proxima iteracao) */
+		free(d);
+		free(gradiente);
+
+		/* calculando o gradiente no novo ponto */
+		gradiente = get_gradiente(funcao, x, num_vars, err);
+
+	}
+	/* copiando o valor de mínimo para retorno */
+	memcpy(vetor_resu, x, num_vars * sizeof(double));
+	/* restaurando os valores originais de *x */
+	memcpy(x, x_tmp, num_vars * sizeof(double));
+
+	/* desalocando */
+	free(x_tmp);
+
+	return vetor_resu;
+}

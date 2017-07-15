@@ -188,3 +188,14 @@ double min_lambda (std::string funcao, double *x, double *d, int num_vars, int v
 	/* minimiza a funcao com relacao a lambda 'campo fantasma' do vetor x original */
 	return min_newton(func, x, num_vars, x[num_vars], DBL_MAX, err);
 }
+
+double* get_gradiente(std::string funcao, double *x, int num_vars, double err) {
+	double* gradiente = (double*) malloc(num_vars * sizeof(double));
+
+	exprtk::expression<double> func = prepara_func(x, num_vars, funcao);
+
+	for (int i = 0; i < num_vars; i++)
+		gradiente[i] = get_first_derivativeN(func, x, i, 1, err);
+
+	return gradiente;
+}
