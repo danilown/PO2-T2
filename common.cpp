@@ -11,17 +11,16 @@ namespace patch{
     }
 }
 
- /* var_index = com relacao a qual x (0, 1, ..., n) esta sendo derivada a funcao 
-  x = vetor ja inicializado de preferencia */
+void printaVetor(double* vetor, int num_vars) {
 
-void printaVetor(double* vetor,int num_vars) {
-
-	for(int i=0;i<num_vars;i++) {
+	for(int i=0; i < num_vars; i++) {
 
 		printf("%lf ",vetor[i]);
 	}
 } 
 
+ /* var_index = com relacao a qual x (0, 1, ..., n) esta sendo derivada a funcao 
+  x = vetor ja inicializado de preferencia */
 double get_first_derivativeN(exprtk::expression<double> funcao, double *x, int var_index, double h, double err) {
 	double p, q;
 
@@ -308,11 +307,22 @@ double* get_gradiente(std::string funcao, double *x, int num_vars, double err) {
 	return gradiente;
 }
 
-double** get_hessiana(std::string funcao, double *x, int num_vars, double err) {
-	double** hessiana = (double**) malloc(num_vars * sizeof(double*));
-	for (int i = 0; i < num_vars; i++)
-		hessiana[i] = (double*) malloc(num_vars * sizeof(double));
+double** alloca_matriz_dinamica(int n_linhas, int n_colunas) {
+	double** matriz_resu = (double**) calloc(n_linhas, sizeof(double*));
+	for (int i = 0; i < n_linhas; i++)
+		matriz_resu[i] = (double*) calloc(n_colunas, sizeof(double));
 
+	return matriz_resu;
+}
+
+
+void free_matriz_dinanica(double** matriz, int n_linhas) {
+	for (int i = 0; i < n_linhas; i++) 
+		free(matriz[i]);
+}
+
+double** get_hessiana(std::string funcao, double *x, int num_vars, double err) {
+	double** hessiana = alloca_matriz_dinamica(num_vars, num_vars);
 
 	exprtk::expression<double> func = prepara_func(x, num_vars, funcao);
 
@@ -362,9 +372,7 @@ double** matriz_mult(double** matriz_A, int a_linhas, int a_colunas, double** ma
 		exit(EXIT_FAILURE);
 	}
 
-	double** matriz_resu = (double**) calloc(a_linhas, sizeof(double*));
-	for (int i = 0; i < a_linhas; i++)
-		matriz_resu[i] = (double*) calloc(b_colunas, sizeof(double));
+	double** matriz_resu = alloca_matriz_dinamica(a_linhas, b_colunas);
 
 	for(int i = 0; i < a_linhas; i++)
     	for(int j = 0; j < b_colunas; j++)
@@ -386,12 +394,10 @@ double mult_vetor_trans(double* vetor_trans,double* vetor_normal, int num_vars) 
 	return resultado;
 }
 
+/* N X 1*/
 double** vetor_em_matriz (double* vetor,int num_vars) {
 
-	double** matriz = (double**) malloc(num_vars * sizeof(double*));
-
-	for (int i = 0; i < num_vars; i++)
-		matriz[i] = (double*) malloc(num_vars * sizeof(double));
+	double** matriz = alloca_matriz_dinamica(num_vars, 1);
 
 	for (int i=0;i<num_vars;i++) {
 
@@ -401,12 +407,10 @@ double** vetor_em_matriz (double* vetor,int num_vars) {
 	return matriz; 
 }
 
+/* 1 X N*/
 double** vetor_tranposto_matriz (double* vetor,int num_vars) {
 
-	double** matriz = (double**) malloc(num_vars * sizeof(double*));
-
-	for (int i = 0; i < num_vars; i++)
-		matriz[i] = (double*) malloc(num_vars * sizeof(double));
+	double** matriz = alloca_matriz_dinamica(1, num_vars);
 
 	for (int i=0;i<num_vars;i++) {
 
@@ -420,14 +424,20 @@ double calcula_denominador(double* direcao, double** hessiana, int num_vars) {
 
 	double** direcao_transposta = vetor_tranposto_matriz(direcao,num_vars);
 
+	/* Nx1*/
 	double** direcao_matriz = vetor_em_matriz(direcao,num_vars);
-
+	
+	/* resulta numa matriz 1xN */
 	double** transposto_hessiana = matriz_mult(direcao_transposta,1,num_vars,hessiana,num_vars,num_vars);
-
-	double** denominador_matriz = matriz_mult(transposto_hessiana,1,num_vars,direcao_matriz,num_vars,num_vars);
-
+	free_matriz_dinanica(direcao_transposta, 1);
+	
+	/* resulta em um escalar 1x1 */
+	double** denominador_matriz = matriz_mult(transposto_hessiana,1,num_vars,direcao_matriz,num_vars,1);
+	free_matriz_dinanica(direcao_matriz, num_vars);
+	free_matriz_dinanica(transposto_hessiana, 1);
+	
 	double denominador = denominador_matriz[0][0];
-
+	free_matriz_dinanica(denominador_matriz, 1);
 	return denominador;
 }
 
@@ -442,15 +452,23 @@ double lambda_gradiente (double* gradiente, double* direcao, double** hessiana, 
 
 double beta_gradiente (double* gradiente, double* direcao, double** hessiana, int num_vars) {
 
+	/* 1xN */
 	double** gradiente_transposto = vetor_tranposto_matriz(gradiente,num_vars);
 
+	/* 1xN */
 	double** gradiente_hessiana = matriz_mult(gradiente_transposto,1,num_vars,hessiana,num_vars,num_vars);
+	free_matriz_dinanica(gradiente_transposto, 1);
 
+	/* Nx1 */
 	double** direcao_matriz = vetor_em_matriz(direcao,num_vars);
 
-	double** numerador_matriz = matriz_mult(gradiente_hessiana,1,num_vars,direcao_matriz,num_vars,num_vars);
+	/* 1x1 */
+	double** numerador_matriz = matriz_mult(gradiente_hessiana,1,num_vars,direcao_matriz,num_vars,1);
+	free_matriz_dinanica(gradiente_hessiana, 1);
+	free_matriz_dinanica(direcao_matriz, num_vars);
 
 	double numerador = numerador_matriz[0][0];
+	free_matriz_dinanica(numerador_matriz, 1);
 
 	double denominador = calcula_denominador(direcao,hessiana,num_vars);
 
@@ -459,21 +477,33 @@ double beta_gradiente (double* gradiente, double* direcao, double** hessiana, in
 
 double beta_f_r (double* gradiente, double* prox_gradiente, int num_vars) {
 
+	/* 1xN */
 	double** gradiente_prox_transposto = vetor_tranposto_matriz(prox_gradiente,num_vars);
 
+	/* Nx1 */
 	double** gradiente_prox_matriz = vetor_em_matriz(prox_gradiente,num_vars);
 
+	/* 1x1 */
 	double** numerador_matriz = matriz_mult(gradiente_prox_transposto,1,num_vars,gradiente_prox_matriz,num_vars,1);
+	free_matriz_dinanica(gradiente_prox_matriz, num_vars);
+	free_matriz_dinanica(gradiente_prox_transposto, 1);
 
 	double numerador = numerador_matriz[0][0];
+	free_matriz_dinanica(numerador_matriz, 1);
 
+	/* 1xN */
 	double** gradiente_transposto = vetor_tranposto_matriz(gradiente,num_vars);
 
+	/* Nx1 */
 	double** gradiente_matriz = vetor_em_matriz(gradiente,num_vars);
 
+	/* 1x1 */
 	double** denominador_matriz = matriz_mult(gradiente_transposto,1,num_vars,gradiente_matriz,num_vars,1);
+	free_matriz_dinanica(numerador_matriz, 1);
+	free_matriz_dinanica(gradiente_matriz, num_vars);
 
 	double denominador = denominador_matriz[0][0];
+	free_matriz_dinanica(denominador_matriz, 1);
 
 	return numerador/denominador;
 }

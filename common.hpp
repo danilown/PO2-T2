@@ -219,3 +219,5 @@ void printaVetor(double* vetor,int num_vars);
  * @return     o valor do beta
  */
 double beta_f_r (double* gradiente, double* prox_gradiente, int num_vars);
+double** alloca_matriz_dinamica(int n_linhas, int n_colunas);
+void free_matriz_dinanica(double** matriz, int n_linhas);
