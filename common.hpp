@@ -175,3 +175,47 @@ void gauss_simples(double** matriz_A, int ordem, double* vetor_X, double* vetor_
  * @return     endereco para a matriz resultante da multiplicacao. A matriz sera de a_linhas x b_colunas
  */
 double** matriz_mult(double** matriz_A, int a_linhas, int a_colunas, double** matriz_B, int b_linhas, int b_colunas);
+
+/**
+ * @brief      Retorna o lambda utilizado nos metodos do gradiente generalizado e fletcher & reeves
+ *
+ * @param      gradiente  gradiente de uma função
+ * @param      direcao    vetor de direção
+ * @param      hessiana   hessiana de uma função
+ * @param[in]  num_vars   numero de variáveis
+ *
+ * @return     o valor do lambda
+ */
+double lambda_gradiente (double* gradiente, double* direcao, double** hessiana, int num_vars);
+
+/**
+ * @brief      Retorna o beta utilizado no metodo do gradiente generalizado
+ *
+ * @param      gradiente  gradiente de uma função
+ * @param      direcao    vetor de direção
+ * @param      hessiana   hessiana de uma função
+ * @param[in]  num_vars   numero de variáveis
+ *
+ * @return     o valor do beta
+ */
+double beta_gradiente (double* gradiente, double* direcao, double** hessiana, int num_vars);
+
+/**
+ * @brief      Imprime um vetor de tamanho qualquer
+ *
+ * @param      vetor     Vetor que será impresso
+ * @param[in]  num_vars  Tamanho do vetor
+ */
+void printaVetor(double* vetor,int num_vars);
+
+/**
+ * @brief      Retorna o beta utilizado no metodo de fletcher & reeves
+ *
+ * @param      gradiente  gradiente de uma função
+ * @param      direcao    vetor de direção
+ * @param      hessiana   hessiana de uma função
+ * @param[in]  num_vars   numero de variáveis
+ *
+ * @return     o valor do beta
+ */
+double beta_f_r (double* gradiente, double* prox_gradiente, int num_vars);

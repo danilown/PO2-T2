@@ -232,3 +232,136 @@ double* newton(std::string funcao, double *x, int num_vars, double err) {
 
 	return vetor_resu;
 }
+
+//x0^3 - 2 * x0 * x1 + x1^2
+double* gradiente_gen(std::string funcao, double* x, int num_vars, double erro) {
+
+	double lambda;
+	double beta;
+
+	double* atual_x = (double*) malloc(num_vars * sizeof(double));
+	memcpy(atual_x, x, num_vars * sizeof(double));
+	double* prox_x;
+	double* prox_direcao;
+	double* grad = get_gradiente(funcao,atual_x,num_vars,erro);
+	double* direcao;
+
+	double** hessiana = get_hessiana(funcao,atual_x,num_vars,erro);
+
+	double norma2 = get_norma2(grad,num_vars);
+
+	while (norma2 > erro) {
+
+		direcao = get_const_mult_vetor(-1,grad,num_vars);
+
+		for (int i=0;i<num_vars;i++) {
+
+			lambda = lambda_gradiente(grad, direcao, hessiana, num_vars);
+
+			double* lambda_direcao = get_const_mult_vetor(lambda,direcao,num_vars);
+
+			prox_x = get_soma_vetor(atual_x, lambda_direcao,num_vars);
+
+			grad = get_gradiente(funcao,prox_x,num_vars,erro);
+
+			if (i<num_vars-1) {
+
+				beta = beta_gradiente(grad, direcao, hessiana, num_vars);
+
+				double* oposto_gradiente = get_const_mult_vetor(-1,grad,num_vars);
+				double* beta_direcao = get_const_mult_vetor(beta,direcao,num_vars);
+
+				prox_direcao = get_soma_vetor(oposto_gradiente, beta_direcao,num_vars);
+
+				free(direcao);
+				direcao = prox_direcao;
+
+			}
+
+			hessiana = get_hessiana(funcao,prox_x,num_vars,erro);
+			free(atual_x);
+			atual_x = prox_x;
+		}
+
+		norma2 = get_norma2(grad,num_vars);
+
+	}
+
+	return atual_x;
+
+}
+
+//x0^3 - x0^2 + 2 * x1^2 - 2*x1
+double* fletcher_reeves(std::string funcao, double* x, int num_vars, double erro) {
+
+	double lambda;
+	double beta;
+
+	double* atual_x = (double*) malloc(num_vars * sizeof(double));
+	memcpy(atual_x, x, num_vars * sizeof(double));
+	double* prox_x;
+	double* prox_direcao;
+	double* prox_grad;
+	double* grad = get_gradiente(funcao,atual_x,num_vars,erro);
+	double* direcao;
+
+	double norma2 = get_norma2(grad,num_vars);
+
+	while (norma2 > erro) {
+
+		direcao = get_const_mult_vetor(-1,grad,num_vars);
+
+		for (int i=0;i<num_vars;i++) {
+
+			std::string lambda_func = transforma_string(funcao, atual_x, direcao, 0);
+
+			for (int j = 1; j < num_vars; j++ )
+				lambda_func = transforma_string(lambda_func, atual_x, direcao, j);
+
+			exprtk::expression<double> func = prepara_func(atual_x, num_vars, lambda_func);
+
+			lambda = min_newton(func, atual_x, num_vars, atual_x[num_vars], DBL_MAX, erro);
+
+			printf("\nLambda em %d: %lf\n",i,lambda);
+
+			double* lambda_direcao = get_const_mult_vetor(lambda,direcao,num_vars);
+
+			prox_x = get_soma_vetor(atual_x, lambda_direcao,num_vars);
+			printf("Proximo x:\n");
+			printaVetor(prox_x,num_vars);
+
+			prox_grad = get_gradiente(funcao,prox_x,num_vars,erro);
+			printf("\nNovo gradiente:\n");
+			printaVetor(prox_grad,num_vars);
+
+			if (i<num_vars-1) {
+
+				beta = beta_f_r(grad, prox_grad, num_vars);
+
+				printf("\nBeta em %d: %lf\n",i,beta);
+
+				double* oposto_gradiente = get_const_mult_vetor(-1,prox_grad,num_vars);
+				double* beta_direcao = get_const_mult_vetor(beta,direcao,num_vars);
+
+				prox_direcao = get_soma_vetor(oposto_gradiente, beta_direcao,num_vars);
+				printf("Proxima direcao:\n");
+				printaVetor(prox_direcao,num_vars);
+
+				free(direcao);
+				direcao = prox_direcao;
+
+			}
+
+			free(atual_x);
+			atual_x = prox_x;
+			free(grad);
+			grad = prox_grad;
+		}
+
+		norma2 = get_norma2(grad,num_vars);
+
+	}
+
+	return atual_x;
+
+}

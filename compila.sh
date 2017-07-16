@@ -1,6 +1,6 @@
 #!/bin/bash
 # cria o arquivo objeto para o avaliador
-g++ -c avaliador.cpp
+#g++ -c avaliador.cpp
 
 # cria o arquivo objeto para common
 g++ -c common.cpp 

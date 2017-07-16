@@ -220,13 +220,14 @@ void chamaMetodo () {
 
 		case 4: {
 
-			g_print("Gradiente Generalizado\n");
+			resposta = gradiente_gen(funcao, valorChute, dimensao, erro);
 			break;
 		}
 
 		case 5: {
 
-			g_print("Fletcher & Reeves\n");
+			resposta = fletcher_reeves(funcao, valorChute, dimensao, erro);
+			g_print("oi");
 			break;
 		}
 	}

@@ -13,6 +13,15 @@ namespace patch{
 
  /* var_index = com relacao a qual x (0, 1, ..., n) esta sendo derivada a funcao 
   x = vetor ja inicializado de preferencia */
+
+void printaVetor(double* vetor,int num_vars) {
+
+	for(int i=0;i<num_vars;i++) {
+
+		printf("%lf ",vetor[i]);
+	}
+} 
+
 double get_first_derivativeN(exprtk::expression<double> funcao, double *x, int var_index, double h, double err) {
 	double p, q;
 
@@ -363,4 +372,108 @@ double** matriz_mult(double** matriz_A, int a_linhas, int a_colunas, double** ma
                 matriz_resu[i][j] += matriz_A[i][k] * matriz_B[k][j];
 
     return matriz_resu;
+}
+
+double mult_vetor_trans(double* vetor_trans,double* vetor_normal, int num_vars) {
+
+	double resultado=0;
+
+	for (int i=0;i<num_vars;i++) {
+
+		resultado+=vetor_trans[i]*vetor_normal[i];
+	}
+
+	return resultado;
+}
+
+double** vetor_em_matriz (double* vetor,int num_vars) {
+
+	double** matriz = (double**) malloc(num_vars * sizeof(double*));
+
+	for (int i = 0; i < num_vars; i++)
+		matriz[i] = (double*) malloc(num_vars * sizeof(double));
+
+	for (int i=0;i<num_vars;i++) {
+
+		matriz[i][0] = vetor[i];
+	}
+
+	return matriz; 
+}
+
+double** vetor_tranposto_matriz (double* vetor,int num_vars) {
+
+	double** matriz = (double**) malloc(num_vars * sizeof(double*));
+
+	for (int i = 0; i < num_vars; i++)
+		matriz[i] = (double*) malloc(num_vars * sizeof(double));
+
+	for (int i=0;i<num_vars;i++) {
+
+		matriz[0][i] = vetor[i];
+	}
+
+	return matriz; 
+}
+
+double calcula_denominador(double* direcao, double** hessiana, int num_vars) {
+
+	double** direcao_transposta = vetor_tranposto_matriz(direcao,num_vars);
+
+	double** direcao_matriz = vetor_em_matriz(direcao,num_vars);
+
+	double** transposto_hessiana = matriz_mult(direcao_transposta,1,num_vars,hessiana,num_vars,num_vars);
+
+	double** denominador_matriz = matriz_mult(transposto_hessiana,1,num_vars,direcao_matriz,num_vars,num_vars);
+
+	double denominador = denominador_matriz[0][0];
+
+	return denominador;
+}
+
+double lambda_gradiente (double* gradiente, double* direcao, double** hessiana, int num_vars) {
+
+	double numerador = mult_vetor_trans(gradiente,direcao,num_vars);
+
+	double denominador = calcula_denominador(direcao,hessiana,num_vars);
+
+	return -(numerador/denominador);
+}
+
+double beta_gradiente (double* gradiente, double* direcao, double** hessiana, int num_vars) {
+
+	double** gradiente_transposto = vetor_tranposto_matriz(gradiente,num_vars);
+
+	double** gradiente_hessiana = matriz_mult(gradiente_transposto,1,num_vars,hessiana,num_vars,num_vars);
+
+	double** direcao_matriz = vetor_em_matriz(direcao,num_vars);
+
+	double** numerador_matriz = matriz_mult(gradiente_hessiana,1,num_vars,direcao_matriz,num_vars,num_vars);
+
+	double numerador = numerador_matriz[0][0];
+
+	double denominador = calcula_denominador(direcao,hessiana,num_vars);
+
+	return numerador/denominador;
+}
+
+double beta_f_r (double* gradiente, double* prox_gradiente, int num_vars) {
+
+	double** gradiente_prox_transposto = vetor_tranposto_matriz(prox_gradiente,num_vars);
+
+	double** gradiente_prox_matriz = vetor_em_matriz(prox_gradiente,num_vars);
+
+	double** numerador_matriz = matriz_mult(gradiente_prox_transposto,1,num_vars,gradiente_prox_matriz,num_vars,1);
+
+	double numerador = numerador_matriz[0][0];
+
+	double** gradiente_transposto = vetor_tranposto_matriz(gradiente,num_vars);
+
+	double** gradiente_matriz = vetor_em_matriz(gradiente,num_vars);
+
+	double** denominador_matriz = matriz_mult(gradiente_transposto,1,num_vars,gradiente_matriz,num_vars,1);
+
+	double denominador = denominador_matriz[0][0];
+
+	return numerador/denominador;
 }
